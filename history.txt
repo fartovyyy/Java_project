@@ -1,0 +1,9 @@
+Alikhan rented BMW 3 Series for 5 days - Total: $180.0
+Alikhan RENTED BMW X5 for 8 days | Total: $432.0
+Ansar RENTED Toyota Camry for 7 days | Total: $252.0
+Alikhan RENTED Honda Civic for 4 days | Total: $160.0
+Ansar RETURNED Toyota Camry
+Ansar RENTED Nissan Leaf for 67 days | Total: $1522.5
+Alikhan RENTED BMW 3 Series for 34 days | Total: $1224.0
+Alikhan RETURNED Honda Civic
+Alikhan RETURNED BMW X5
