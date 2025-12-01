@@ -2,6 +2,8 @@ import java.util.Scanner;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.File;
+import java.time.LocalDateTime; // для даты и времени
+
 // Base class for all cars
 class Car {
     // Encapsulation: private fields
@@ -84,6 +86,7 @@ class Electric extends Car {
 // RentalRecord class - stores one history line
 class RentalRecord {
     private String line; // just store full text line
+
     public RentalRecord(String line) {
         this.line = line;
     }
@@ -133,6 +136,7 @@ class CarRentalSystem {
         // Load existing history from file and restore car states
         loadHistoryFromFile();
     }
+
     // Load history from history.txt and apply RENTED/RETURNED to cars
     private void loadHistoryFromFile() {
         try {
@@ -158,10 +162,10 @@ class CarRentalSystem {
     private void processHistoryLine(String line) {
         if (line.contains("RENTED")) {
             String[] parts = line.split(" ");
+            // Format: clientName RENTED Brand Model ...
             String renter = parts[0];
             String brand = parts[2];
             String model = parts[3];
-
             Car car = findCar(brand, model);
             if (car != null) {
                 car.setAvailable(false);
@@ -170,11 +174,10 @@ class CarRentalSystem {
         }
         if (line.contains("RETURNED")) {
             String[] parts = line.split(" ");
-
+            // Format: clientName RETURNED Brand Model ...
             String renter = parts[0];
             String brand = parts[2];
             String model = parts[3];
-
             Car car = findCar(brand, model);
             if (car != null && car.getRentedBy().equals(renter)) {
                 car.setAvailable(true);
@@ -194,6 +197,14 @@ class CarRentalSystem {
         return null;
     }
 
+    // Public helper to get car by index (for confirmation in main)
+    public Car getCarByIndex(int index) {
+        if (index < 0 || index >= cars.length) {
+            return null;
+        }
+        return cars[index];
+    }
+
     // Save one line to history.txt
     private void saveHistoryToFile(String text) {
         try {
@@ -205,11 +216,13 @@ class CarRentalSystem {
         }
     }
 
-    // Show all cars (with status)
+    // Show all cars (with status + price info)
     public void showAllCars() {
         System.out.println("\n--- All Cars ---");
-        for (int i = 0; i < cars.length; i++) { 
-            System.out.println(i + ": " + cars[i]);
+        for (int i = 0; i < cars.length; i++) {
+            // calculate price for 1 day using polymorphism
+            double oneDayPrice = cars[i].calculatePrice(1);
+            System.out.println(i + ": " + cars[i] + " | Price for 1 day: $" + oneDayPrice);
         }
     }
 
@@ -218,8 +231,24 @@ class CarRentalSystem {
         System.out.println("\n--- Available Cars ---");
         for (int i = 0; i < cars.length; i++) {
             if (cars[i].isAvailable()) { // conditional if
-                System.out.println(i + ": " + cars[i]);
+                double oneDayPrice = cars[i].calculatePrice(1);
+                System.out.println(i + ": " + cars[i] + " | Price for 1 day: $" + oneDayPrice);
             }
+        }
+    }
+
+    // Show only cars rented by this user
+    public void showMyRentals(String clientName) {
+        System.out.println("\n--- My Current Rentals ---");
+        boolean found = false;
+        for (int i = 0; i < cars.length; i++) {
+            if (!cars[i].isAvailable() && cars[i].getRentedBy().equals(clientName)) {
+                System.out.println(i + ": " + cars[i]);
+                found = true;
+            }
+        }
+        if (!found) {
+            System.out.println("You have no active rentals.");
         }
     }
 
@@ -231,7 +260,8 @@ class CarRentalSystem {
         for (Car car : cars) {
             if (car.getBrand().equalsIgnoreCase(keyword) ||
                 car.getModel().equalsIgnoreCase(keyword)) {
-                System.out.println(car);
+                double oneDayPrice = car.calculatePrice(1);
+                System.out.println(car + " | Price for 1 day: $" + oneDayPrice);
                 found = true;
             }
         }
@@ -285,9 +315,13 @@ class CarRentalSystem {
         car.setAvailable(false);
         car.setRentedBy(clientName);
 
+        // add date and time to history line
+        LocalDateTime now = LocalDateTime.now();
+
         String line = clientName + " RENTED " +
                 car.getBrand() + " " + car.getModel() +
-                " for " + days + " days | Total: $" + totalPrice;
+                " for " + days + " days | Total: $" + totalPrice +
+                " | Date: " + now;
 
         history[historyCount++] = new RentalRecord(line);
         saveHistoryToFile(line);
@@ -313,13 +347,18 @@ class CarRentalSystem {
         }
         car.setAvailable(true);
         car.setRentedBy("");
+
+        LocalDateTime now = LocalDateTime.now();
+
         String line = clientName + " RETURNED " +
-                car.getBrand() + " " + car.getModel();
+                car.getBrand() + " " + car.getModel() +
+                " | Date: " + now;
 
         history[historyCount++] = new RentalRecord(line);
         saveHistoryToFile(line);
         System.out.println("Thank you, " + clientName + ". You have returned the car.");
     }
+
     // Show full rental history
     public void showHistory() {
         System.out.println("\n--- Full Rental History ---");
@@ -330,6 +369,54 @@ class CarRentalSystem {
         for (int i = 0; i < historyCount; i++) {
             System.out.println(history[i]);
         }
+    }
+
+    // Show system statistics
+    public void showStatistics() {
+        System.out.println("\n--- System Statistics ---");
+
+        int totalCars = cars.length;
+        int available = 0;
+        int rented = 0;
+        int totalRentOperations = 0;
+        double totalRevenue = 0.0;
+
+        // count available / rented
+        for (Car c : cars) {
+            if (c.isAvailable()) available++;
+            else rented++;
+        }
+
+        // analyze history for RENTED and Total: $
+        for (int i = 0; i < historyCount; i++) {
+            String line = history[i].toString();
+            if (line.contains("RENTED")) {
+                totalRentOperations++;
+            }
+            int idx = line.indexOf("Total: $");
+            if (idx != -1) {
+                int start = idx + "Total: $".length();
+                int end = line.indexOf("|", start);
+                String amountStr;
+                if (end == -1) {
+                    amountStr = line.substring(start).trim();
+                } else {
+                    amountStr = line.substring(start, end).trim();
+                }
+                try {
+                    double value = Double.parseDouble(amountStr);
+                    totalRevenue += value;
+                } catch (NumberFormatException e) {
+                    // ignore parse errors
+                }
+            }
+        }
+
+        System.out.println("Total cars: " + totalCars);
+        System.out.println("Available cars: " + available);
+        System.out.println("Rented cars: " + rented);
+        System.out.println("Total RENT operations: " + totalRentOperations);
+        System.out.println("Total revenue (from history): $" + totalRevenue);
     }
 
     // Print receipt for the client
@@ -348,6 +435,21 @@ class CarRentalSystem {
 
 // Main class with console menu
 public class index {
+
+    // simple loading animation
+    private static void showLoading() {
+        System.out.print("Loading");
+        for (int i = 0; i < 3; i++) {
+            try {
+                Thread.sleep(400); // pause 0.4 seconds
+            } catch (InterruptedException e) {
+                // ignore
+            }
+            System.out.print(".");
+        }
+        System.out.println();
+    }
+
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         CarRentalSystem system = new CarRentalSystem(); // create system object
@@ -355,6 +457,10 @@ public class index {
         System.out.println("Welcome to Car Rental System!");
         System.out.print("Please enter your name: ");
         String clientName = scanner.nextLine(); // store client name for this session
+
+        // mini loading animation
+        showLoading();
+
         int choice = -1;
         // Main loop (while) - console menu
         while (choice != 0) {
@@ -366,6 +472,8 @@ public class index {
             System.out.println("5 - Show rental history");
             System.out.println("6 - Search car");
             System.out.println("7 - Sort cars by year");
+            System.out.println("8 - Show my rentals");
+            System.out.println("9 - Show system statistics");
             System.out.println("0 - Exit");
             System.out.print("Enter your choice: ");
 
@@ -394,6 +502,22 @@ public class index {
                     System.out.print("Enter number of days: ");
                     int days = scanner.nextInt();
                     scanner.nextLine();
+
+                    // подтверждение перед арендой
+                    Car selectedCar = system.getCarByIndex(rentIndex);
+                    if (selectedCar == null) {
+                        System.out.println("Invalid car selection.");
+                        break;
+                    }
+                    System.out.println("\nYou selected: " + selectedCar);
+                    System.out.println("Days: " + days);
+                    System.out.print("Confirm rental? (y/n): ");
+                    String confirm = scanner.nextLine();
+                    if (!confirm.equalsIgnoreCase("y")) {
+                        System.out.println("Rental cancelled.");
+                        break;
+                    }
+
                     system.rentCar(rentIndex, clientName, days);
                     break;
                 case 4:
@@ -413,6 +537,12 @@ public class index {
                     break;
                 case 7:
                     system.sortCarsByYear();
+                    break;
+                case 8:
+                    system.showMyRentals(clientName);
+                    break;
+                case 9:
+                    system.showStatistics();
                     break;
                 case 0:
                     System.out.println("Thank you, " + clientName + "! Goodbye!");

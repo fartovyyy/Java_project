@@ -7,3 +7,6 @@ Ansar RENTED Nissan Leaf for 67 days | Total: $1522.5
 Alikhan RENTED BMW 3 Series for 34 days | Total: $1224.0
 Alikhan RETURNED Honda Civic
 Alikhan RETURNED BMW X5
+Ansar RENTED BMW 3 Series for 5 days | Total: $180.0 | Date: 2025-12-01T10:53:35.255021
+Alikhan RENTED Toyota Camry for 1 days | Total: $40.0 | Date: 2025-12-01T10:56:11.323823
+Ansar RETURNED Nissan Leaf | Date: 2025-12-01T10:56:47.002953
