@@ -148,7 +148,7 @@ class CarRentalSystem {
 
                 // Save line as record for showing later
                 history[historyCount++] = new RentalRecord(line);
-
+                               
                 // Restore rented/available state based on line text
                 processHistoryLine(line);
             }
@@ -285,50 +285,50 @@ class CarRentalSystem {
         System.out.println("\nCars sorted by year!");
     }
 
-    // Rent a car by index
-    public void rentCar(int index, String clientName, int days) {
-        if (index < 0 || index >= cars.length) {
-            System.out.println("Invalid car selection.");
-            return;
+        // Rent a car by index
+        public void rentCar(int index, String clientName, int days) {
+            if (index < 0 || index >= cars.length) {
+                System.out.println("Invalid car selection.");
+                return;
+            }
+            if (days <= 0) {
+                System.out.println("Days must be greater than 0.");
+                return;
+            }
+            Car car = cars[index];
+
+            if (!car.isAvailable()) {
+                System.out.println("Sorry, this car is already rented by " + car.getRentedBy());
+                return;
+            }
+
+            // Polymorphism: actual method depends on real car type (Sedan/SUV/Electric)
+            double basePrice = car.calculatePrice(days);
+            double discount = 0;
+
+            // Extra discount rules 
+            if (days >= 5) discount += 0.10;         // long rental discount
+            if (car instanceof Electric) discount += 0.15; // eco discount
+
+            double totalPrice = basePrice * (1 - discount);
+
+            car.setAvailable(false);
+            car.setRentedBy(clientName);
+
+            // add date and time to history line
+            LocalDateTime now = LocalDateTime.now();
+
+            String line = clientName + " RENTED " +
+                    car.getBrand() + " " + car.getModel() +
+                    " for " + days + " days | Total: $" + totalPrice +
+                    " | Date: " + now;
+
+            history[historyCount++] = new RentalRecord(line);
+            saveHistoryToFile(line);
+
+            printReceipt(clientName, car.getBrand() + " " + car.getModel(),
+                    days, basePrice, discount, totalPrice);
         }
-        if (days <= 0) {
-            System.out.println("Days must be greater than 0.");
-            return;
-        }
-        Car car = cars[index];
-
-        if (!car.isAvailable()) {
-            System.out.println("Sorry, this car is already rented by " + car.getRentedBy());
-            return;
-        }
-
-        // Polymorphism: actual method depends on real car type (Sedan/SUV/Electric)
-        double basePrice = car.calculatePrice(days);
-        double discount = 0;
-
-        // Extra discount rules 
-        if (days >= 5) discount += 0.10;         // long rental discount
-        if (car instanceof Electric) discount += 0.15; // eco discount
-
-        double totalPrice = basePrice * (1 - discount);
-
-        car.setAvailable(false);
-        car.setRentedBy(clientName);
-
-        // add date and time to history line
-        LocalDateTime now = LocalDateTime.now();
-
-        String line = clientName + " RENTED " +
-                car.getBrand() + " " + car.getModel() +
-                " for " + days + " days | Total: $" + totalPrice +
-                " | Date: " + now;
-
-        history[historyCount++] = new RentalRecord(line);
-        saveHistoryToFile(line);
-
-        printReceipt(clientName, car.getBrand() + " " + car.getModel(),
-                days, basePrice, discount, totalPrice);
-    }
 
     // Return a car by index
     public void returnCar(int index, String clientName) {
@@ -503,7 +503,7 @@ public class index {
                     int days = scanner.nextInt();
                     scanner.nextLine();
 
-                    // подтверждение перед арендой
+                    // confirmation before renting
                     Car selectedCar = system.getCarByIndex(rentIndex);
                     if (selectedCar == null) {
                         System.out.println("Invalid car selection.");
